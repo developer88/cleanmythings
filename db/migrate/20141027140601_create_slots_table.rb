@@ -14,6 +14,7 @@ class CreateSlotsTable < ActiveRecord::Migration
     	t.boolean  :pets
     	t.string   :pets_describe
     	t.integer  :cleaning
+        t.string   :priority
 
     	#t.timestamps we do not need this
     end

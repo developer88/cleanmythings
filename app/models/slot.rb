@@ -11,9 +11,31 @@ class Slot < ActiveRecord::Base
 	validates :cats, inclusion: { in: [true, false] }
 	validates :dogs, inclusion: { in: [true, false] }
 	validates :pets, inclusion: { in: [true, false] }
+	validates :hours, numericality: true, if: Proc.new { |a| a.hours.present? }
 
+	validates :priority, presence: true, if: :not_enough_time?
+
+	# check if slot is available
 	def available?
+		# TODO
 		true
 	end
+
+	# calculate necessary time to finish cleaning
+	def time_recommend
+		1.5 + (bedrooms.to_i * 0.5) + bathrooms.to_i + cleaning.to_s.chars.map(&:to_i).inject{|sum,x| sum + x }.to_i
+	end
+
+	# List of all available slots
+	def self.available(params)
+		[]
+	end
+
+	private
+
+		# check if time for cleaning requested by user is non enought for full cleaning
+		def not_enough_time?
+			hours.present? && time_recommend > hours.to_f
+		end
 
 end

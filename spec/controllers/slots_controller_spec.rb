@@ -15,11 +15,20 @@ RSpec.describe SlotsController, type: :controller do
 
 	describe '#index' do
 
-		context 'there are free slots' do
+		context 'should return list' do
 
-		end
+			it 'with free slots' do
+				get :index, slot: { supplies_by_owner: true, cleaning: 100001, bathrooms: 1, bedrooms: 2 } 
+				resp = successful_response
+				expect(resp["slots"].size).to eq(2)
+			end
 
-		context 'there is no any free slots' do
+			it 'without free slots' do
+				# todo
+				get :index, slot: { supplies_by_owner: true, cleaning: 100001, bathrooms: 1, bedrooms: 2 } 
+				resp = unsuccessful_response(404)
+				expect(resp["error"]).to eq('No Slots available for params provided')			
+			end
 
 		end
 
@@ -28,6 +37,13 @@ RSpec.describe SlotsController, type: :controller do
 	describe '#create' do
 
 		context 'should proceed' do
+
+			it 'should book free slot' do
+				post :create, { user: {name: 'Andrey', email: 'someEmail@servcer.com', address: 'some street, some city', zip: '000000', phone: '+74443332222'}, slot: { supplies_by_owner: true, cleaning: 100001, bathrooms: 1, bedrooms: 2 } }
+				resp = successful_response
+				expect(resp["slot"]["id"].to_i).to eq(Slot.last.id)
+				expect(resp["user"]["id"].to_i).to eq(User.last.id)
+			end
 
 		end
 

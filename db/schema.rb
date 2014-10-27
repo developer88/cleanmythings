@@ -27,6 +27,7 @@ ActiveRecord::Schema.define(version: 20141027141144) do
     t.boolean  "pets"
     t.string   "pets_describe"
     t.integer  "cleaning"
+    t.string   "priority"
   end
 
   create_table "users", force: true do |t|
