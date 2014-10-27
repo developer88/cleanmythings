@@ -10,7 +10,14 @@ RSpec.describe Slot, type: :model do
   it { should validate_numericality_of(:bathrooms).only_integer.is_greater_than_or_equal_to(1).is_less_than_or_equal_to(5) }
   it { should validate_numericality_of(:bedrooms).only_integer.is_greater_than_or_equal_to(0).is_less_than_or_equal_to(5) }
   it { should validate_numericality_of(:how_often).only_integer.is_greater_than_or_equal_to(0).is_less_than_or_equal_to(4) }
+  it { should validate_numericality_of(:cleaning).only_integer.is_greater_than_or_equal_to(0).is_less_than_or_equal_to(111111) }
 
-  it { should belong_to(:slot_user) }
+  it { should belong_to(:user) }
+
+  describe '#available?' do
+
+
+
+  end
 
 end

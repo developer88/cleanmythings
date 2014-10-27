@@ -13,16 +13,8 @@
 
 ActiveRecord::Schema.define(version: 20141027141144) do
 
-  create_table "slot_users", force: true do |t|
-    t.string "name"
-    t.string "email"
-    t.string "address"
-    t.string "zip"
-    t.string "phone"
-  end
-
   create_table "slots", force: true do |t|
-    t.integer  "slot_user_id"
+    t.integer  "user_id"
     t.float    "hours"
     t.boolean  "supplies_by_owner"
     t.integer  "bedrooms"
@@ -30,6 +22,19 @@ ActiveRecord::Schema.define(version: 20141027141144) do
     t.integer  "how_often"
     t.datetime "date"
     t.time     "start_at"
+    t.boolean  "cats"
+    t.boolean  "dogs"
+    t.boolean  "pets"
+    t.string   "pets_describe"
+    t.integer  "cleaning"
+  end
+
+  create_table "users", force: true do |t|
+    t.string "name"
+    t.string "email"
+    t.string "address"
+    t.string "zip"
+    t.string "phone"
   end
 
 end
