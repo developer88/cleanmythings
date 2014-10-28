@@ -24,7 +24,6 @@ RSpec.describe SlotsController, type: :controller do
 			end
 
 			it 'without free slots' do
-				# todo
 				get :index, slot: { supplies_by_owner: true, cleaning: 100001, bathrooms: 1, bedrooms: 2 } 
 				resp = unsuccessful_response(404)
 				expect(resp["error"]).to eq('No Slots available for params provided')			
@@ -36,18 +35,14 @@ RSpec.describe SlotsController, type: :controller do
 
 	describe '#create' do
 
-		context 'should proceed' do
-
-			it 'should book free slot' do
-				post :create, { user: {name: 'Andrey', email: 'someEmail@servcer.com', address: 'some street, some city', zip: '000000', phone: '+74443332222'}, slot: { supplies_by_owner: true, cleaning: 100001, bathrooms: 1, bedrooms: 2 } }
-				resp = successful_response
-				expect(resp["slot"]["id"].to_i).to eq(Slot.last.id)
-				expect(resp["user"]["id"].to_i).to eq(User.last.id)
-			end
-
+		it 'should book free slot' do
+			post :create, { user: {name: 'Andrey', email: 'someEmail@servcer.com', address: 'some street, some city', zip: '000000', phone: '+74443332222'}, slot: { supplies_by_owner: true, cleaning: 100001, bathrooms: 1, bedrooms: 2 } }
+			resp = successful_response
+			expect(resp["slot"]["id"].to_i).to eq(Slot.last.id)
+			expect(resp["user"]["id"].to_i).to eq(User.last.id)
 		end
 
-		context 'should not proceed' do
+		context 'should not book a slot' do
 
 			it 'because of invalid user params' do
 				post :create, {user: {name: 'Andrey', email: 'someEmail@servcer.com'} }
@@ -64,7 +59,7 @@ RSpec.describe SlotsController, type: :controller do
 			it 'because of invalid slot params' do
 				post :create, { user: {name: 'Andrey', email: 'someEmail@servcer.com', address: 'some street, some city', zip: '000000', phone: '+74443332222'}, slot: { supplies_by_owner: true, cleaning: 100001, bathrooms: 1, bedrooms: 2 } }
 				resp = unsuccessful_response(400)
-				expect(resp["errors"].size).to eq(6)
+				expect(resp["errors"].size).to eq(1)
 			end
 
 		end
