@@ -18,8 +18,8 @@ Look at [slots_controller.rb](https://github.com/developer88/cleanmythings/blob/
 
 I decided to create 2 methods:
 
-* 'index' which returns JSON with list of all free slots. This method requests slot params which are: :hours - time needed for cleaning  and :bathrooms, :bedrooms, :cleaning - extra task for cleaning, :how_often - all these items needed to generate recommended length (hours param) of cleaning
-* 'create' which books selected free slot for user. This method requests slot params from 'index' method and user params which are: :name, :email, :address, :zip, :phone. I didn't implement validation for phone, email, proper zip code.
+* 'index' which returns JSON with list of all free slots. This method requests slot params which are: :hours - time needed for cleaning  and :bathrooms, :bedrooms, :cleaning - extra task for cleaning, :how_often - all these items needed to generate recommended length (hours param) of cleaning, :date - to specify date
+* 'create' which books selected free slot for user. This method requests slot params from 'index' method and user params which are: :name, :email, :address, :zip, :phone. I didn't implement validation for phone, email, proper zip code + :start_at for slots param to specify time to start cleaning.
 
 ###### Clarify in which step the backend function should be called
 
@@ -48,7 +48,13 @@ At first i wanted to create slots in table with step 0f 30 minutes, but then i d
 
 Because of each slot may have different start time and length i use GAP constant to check if next slot is in +- GAP interval.
 
+I use SQLite so no indexes were created.
+
 ###### Create API
 
 * Look at [slots_controller.rb](https://github.com/developer88/cleanmythings/blob/master/app/controllers/slots_controller.rb "slots_controller.rb") for main API methods.
 * Look at [slots_controller_spec.rb](https://github.com/developer88/cleanmythings/blob/master/spec/controllers/slots_controller_spec.rb "slots_controller_spec.rb") for main API methods specs.
+
+###### Overall
+
+I think i have chosen too complicated way to check for slots available so i think this is not my best app :( 
