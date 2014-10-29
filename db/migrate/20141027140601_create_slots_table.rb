@@ -7,8 +7,8 @@ class CreateSlotsTable < ActiveRecord::Migration
     	t.integer  :bedrooms, default: 0
     	t.integer  :bathrooms, default: 1
     	t.integer  :how_often, default: 0
-    	t.datetime :date
-    	t.datetime :start_at
+    	t.datetime :end_at
+    	t.datetime :start_at        
     	t.boolean  :cats, default: false
     	t.boolean  :dogs, default: false
     	t.boolean  :pets, default: false

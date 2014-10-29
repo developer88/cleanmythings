@@ -21,8 +21,8 @@ class SlotsController < ApplicationController
 		return do_respond({errors: user.errors.full_messages}, 400) unless user.save
 		slot = Slot.new(slot_params[:slot])
 		slot.user = user
-		return do_respond({errors: slot.errors.full_messages}, 400) unless slot.save
 		return do_respond({error: "Slot is not available"}, 404) unless slot.available? # I decided to make it with another line to return user 404 instead of 400 in case of slot is not available
+		return do_respond({errors: slot.errors.full_messages}, 400) unless slot.book
 		do_respond({slot: slot, user: user})
 	end
 

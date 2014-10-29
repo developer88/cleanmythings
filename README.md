@@ -4,7 +4,7 @@ Used RoR and SQLite:
 *  First cause this is my favorite framework on ruby.
 *  Second cause it fits well for that little task.
 
-User RSpec and Should:
+User RSpec and Shoulda:
 * First is convinient and amazing way to test everything in Ruby world
 * Second is just a sugar
 

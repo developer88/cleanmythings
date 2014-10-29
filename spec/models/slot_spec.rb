@@ -32,6 +32,14 @@ RSpec.describe Slot, type: :model do
 
   end
 
+  describe '#book' do
+
+
+
+
+
+  end
+
   describe '#available' do
 
   	before do

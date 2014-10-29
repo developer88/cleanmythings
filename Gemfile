@@ -13,3 +13,5 @@ gem 'spring',        group: :development
 
 gem 'rspec-rails', group: [:test, :development]
 gem 'shoulda', group: [:test]
+
+gem 'time_difference', '~> 0.3.2'
