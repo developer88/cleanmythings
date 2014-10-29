@@ -16,75 +16,98 @@ RSpec.describe Slot, type: :model do
 
   it { should belong_to(:user) }
 
+  let(:time){ Time.now + 1.day }
+  let(:tomorrow){ Time.utc(time.year, time.month, time.day, 10, 0)  }
+
   it 'should validate priority field if time requested is not enought' do
-
-  end
-
-  describe '#available?' do
-
-  	it 'should notify that slot is available' do
-
-  	end
-
-  	it 'should notify that slot is not available' do
-
-  	end
-
+  	s = Slot.new({hours: 3, start_at: tomorrow, how_often:0, bathrooms: 4, bedrooms: 4})
+  	expect(s.valid?).to be false
+  	expect(s.errors.full_messages.size).to eq(1)
   end
 
   describe '#book' do
 
+  	context 'with errors' do
 
+  		it 'should return false because of time is occupied' do
+  			Slot.create!({hours: 4, start_at: tomorrow, how_often:0, team: "1"})
+  			Slot.create!({hours: 4, start_at: tomorrow, how_often:0, team: "2"})
+  			Slot.create!({hours: 4, start_at: tomorrow, how_often:0, team: "3"})
+  			slot = Slot.new({hours: 4, start_at: tomorrow, how_often:1})
+  			expect(slot.valid?).to be false
+  			expect(slot.errors.full_messages.size).to eq(1)
+  		end
 
+  		it 'should return false because of wrong params' do
+  			slot = Slot.new({hours: 4, start_at: tomorrow + Random.rand(5).hours, how_often:5})
+  			expect(slot.valid?).to be false
+  			expect(slot.errors.full_messages.size).to eq(1)
+  		end
 
+  	end
+
+  	context 'with no errors' do
+
+  		it 'should successfully create new slot for one time cleaning' do
+  			slot = Slot.new({hours: 4, start_at: tomorrow + Random.rand(6).hours, how_often:0})
+  			expect(slot.valid?).to be true
+  			expect(slot.book).to be true
+  			expect(Slot.all.size).to eq(1)
+  		end
+
+   		it 'should successfully create new slot for weakly cleaning' do
+   			slot = Slot.new({hours: 4, start_at: tomorrow + Random.rand(6).hours, how_often:1})
+   			expect(slot.valid?).to be true
+   			expect(slot.book).to be true
+   			expect(Slot.all.size).to eq(3)
+  		end 
+
+  	end
 
   end
 
   describe '#available' do
 
-  	before do
-  		2.times do
-  			Slot.create(bathrooms: 1, bedrooms: 1, how_often: 0, hours: 5, cleaning: 100000, start_at: 10.hours, date: Time.now + (Random.rand(10)).days)
-  		end
-  	end	
-
   	context 'should return list of all available slots' do
 
   		it 'for proper how_often param' do
-  			list = Slot.available({how_often: 0, hours: 5})
-  			expect(list.is_a?(Array)).to be true
-  			expect(list.size).to eq(2)
+  			list = Slot.available({how_often: 0, hours: 3, date: tomorrow})
+  			expect(list.is_a?(Hash)).to be true
+  			expect(list.keys.size).to eq( TimeDifference.between(tomorrow, tomorrow + 3.months).in_days + 1  )
   		end
 
   		it 'for empty params' do
   			list = Slot.available
-  			expect(list.is_a?(Array)).to be true
-  			expect(list.size).to eq(2)
+  			expect(list.is_a?(Hash)).to be true
+  			expect(list.keys.size).to eq( TimeDifference.between(tomorrow, tomorrow + 3.months).in_days   )
   		end
 
-  	end
-
-  	it 'should return list of all available slots' do
-  		
   	end
 
   	context 'should return empty list because of' do
 
-  		it 'no free slots for how_often param' do
-	  		list = Slot.available({bathrooms: 1, bedrooms: 1, how_often: 2, hours: 5})
-	  		expect(list.is_a?(Array)).to be true
-	  		expect(list.size).to eq(2)
+  	before do
+  		@time1 = tomorrow + Random.rand(6).hours
+  		@time2 = tomorrow + Random.rand(3).days
+  	    Slot.new(bathrooms: 1, bedrooms: 1, how_often: 0, hours: 5, cleaning: 100000, start_at: @time1).book
+  	    Slot.new(bathrooms: 1, bedrooms: 1, how_often: 0, hours: 5, cleaning: 100000, start_at: @time1).book
+  	    Slot.new(bathrooms: 1, bedrooms: 1, how_often: 0, hours: 5, cleaning: 100000, start_at: @time1).book
+  	    Slot.new(bathrooms: 1, bedrooms: 1, how_often: 0, hours: 5, cleaning: 100000, start_at: @time2).book
+  	    Slot.new(bathrooms: 1, bedrooms: 1, how_often: 0, hours: 5, cleaning: 100000, start_at: @time2).book
+  	    Slot.new(bathrooms: 1, bedrooms: 1, how_often: 0, hours: 5, cleaning: 100000, start_at: @time2).book 	    
+  	end	  		
+
+  		it 'no free slots for how_often param for weekly cleaning' do
+	  		list = Slot.available({bathrooms: 1, bedrooms: 1, how_often: 2, hours: 5, date: @time1})
+	  		expect(list.is_a?(Hash)).to be true
+	  		expect(list.has_key?(@time1)).to be false
   		end
 
-  		it 'no free slots for how_often param' do
-	  		list = Slot.available({bathrooms: 1, bedrooms: 1, how_often: 2, hours: 5})
-	  		expect(list.is_a?(Array)).to be true
-	  		expect(list.size).to eq(2)
-  		end  		
-
-  	end
-
-  	it 'wrong params' do
+  		it 'no free slots for how_often param for one time cleaning' do
+	  		list = Slot.available({bathrooms: 1, bedrooms: 1, how_often: 2, hours: 5, date: @time2})
+	  		expect(list.is_a?(Hash)).to be true
+	  		expect(list.has_key?(@time2)).to be false
+  		end    				
 
   	end
 

@@ -15,7 +15,7 @@ class CreateSlotsTable < ActiveRecord::Migration
     	t.string   :pets_describe
     	t.integer  :cleaning, default: 0
         t.string   :priority
-        t.string   :team, default: 1
+        t.integer  :team, default: 1
 
     	#t.timestamps we do not need this
     end

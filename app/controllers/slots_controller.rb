@@ -10,18 +10,14 @@ class SlotsController < ApplicationController
 
     # List of all available slots
 	def index
-		list = Slot.available(slot_params[:slot])
-		return do_respond({error: "No Slots available for params provided"}, 404) if list.size == 0
-		do_respond({slots: list})
+		do_respond({slots: Slot.available(slot_params[:slot])})
 	end
 
 	# Booking a slot
 	def create
 		user = User.new(slot_params[:user])
 		return do_respond({errors: user.errors.full_messages}, 400) unless user.save
-		slot = Slot.new(slot_params[:slot])
-		slot.user = user
-		return do_respond({error: "Slot is not available"}, 404) unless slot.available? # I decided to make it with another line to return user 404 instead of 400 in case of slot is not available
+		slot = Slot.new(slot_params[:slot].merge({user_id: user.id}))
 		return do_respond({errors: slot.errors.full_messages}, 400) unless slot.book
 		do_respond({slot: slot, user: user})
 	end

@@ -28,7 +28,7 @@ ActiveRecord::Schema.define(version: 20141027141144) do
     t.string   "pets_describe"
     t.integer  "cleaning",          default: 0
     t.string   "priority"
-    t.string   "team",              default: "1"
+    t.integer  "team",              default: 1
   end
 
   create_table "users", force: true do |t|

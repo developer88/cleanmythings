@@ -3,6 +3,9 @@ require 'rails_helper'
 
 RSpec.describe SlotsController, type: :controller do
 
+	let(:time){ Time.now + 1.day }
+    let(:tomorrow){ Time.utc(time.year, time.month, time.day, 10, 0)  }
+
 	describe '#handle_error' do
 
 		it 'should get "Error" message if raise param is passed' do
@@ -18,15 +21,19 @@ RSpec.describe SlotsController, type: :controller do
 		context 'should return list' do
 
 			it 'with free slots' do
-				get :index, slot: { supplies_by_owner: true, cleaning: 100001, bathrooms: 1, bedrooms: 2 } 
+				get :index, slot: { supplies_by_owner: true, cleaning: 100001, bathrooms: 1, bedrooms: 2, hours: 3, date: tomorrow } 
 				resp = successful_response
-				expect(resp["slots"].size).to eq(2)
+				expect(resp["slots"].size).to be > 0
+				expect(resp["slots"].keys.first.include?(tomorrow.to_date.to_s)).to be true
 			end
 
 			it 'without free slots' do
-				get :index, slot: { supplies_by_owner: true, cleaning: 100001, bathrooms: 1, bedrooms: 2 } 
-				resp = unsuccessful_response(404)
-				expect(resp["error"]).to eq('No Slots available for params provided')			
+				Slot.create!({hours: 4, start_at: tomorrow, how_often:0, team: "1"})
+				Slot.create!({hours: 4, start_at: tomorrow, how_often:0, team: "2"})
+				Slot.create!({hours: 4, start_at: tomorrow, how_often:0, team: "3"})
+				get :index, slot: { bathrooms: 1, bedrooms: 1, how_often: 2, hours: 5, date: tomorrow } 
+				resp = successful_response
+				expect(resp["slots"][resp["slots"].keys.first].include?(tomorrow.to_json)).to be false		
 			end
 
 		end
@@ -36,7 +43,7 @@ RSpec.describe SlotsController, type: :controller do
 	describe '#create' do
 
 		it 'should book free slot' do
-			post :create, { user: {name: 'Andrey', email: 'someEmail@servcer.com', address: 'some street, some city', zip: '000000', phone: '+74443332222'}, slot: { supplies_by_owner: true, cleaning: 100001, bathrooms: 1, bedrooms: 2 } }
+			post :create, { user: {name: 'Andrey', email: 'someEmail@servcer.com', address: 'some street, some city', zip: '000000', phone: '+74443332222'}, slot: {hours: 4, start_at: tomorrow + Random.rand(6).hours, how_often:1} }
 			resp = successful_response
 			expect(resp["slot"]["id"].to_i).to eq(Slot.last.id)
 			expect(resp["user"]["id"].to_i).to eq(User.last.id)
@@ -51,15 +58,18 @@ RSpec.describe SlotsController, type: :controller do
 			end
 
 			it 'because of there is no slots available for params given' do
-				post :create, { user: {name: 'Andrey', email: 'someEmail@servcer.com', address: 'some street, some city', zip: '000000', phone: '+74443332222'}, slot: { supplies_by_owner: true, cleaning: 100001, bathrooms: 1, bedrooms: 2 } }
-				resp = unsuccessful_response(404)
-				expect(resp["error"]).to eq('Slot is not available')
+				Slot.create!({hours: 4, start_at: tomorrow, how_often:0, team: "1"})
+				Slot.create!({hours: 4, start_at: tomorrow, how_often:0, team: "2"})
+				Slot.create!({hours: 4, start_at: tomorrow, how_often:0, team: "3"})
+				post :create, { user: {name: 'Andrey', email: 'someEmail@servcer.com', address: 'some street, some city', zip: '000000', phone: '+74443332222'}, slot: {hours: 4, start_at: tomorrow, how_often:0} }
+				resp = unsuccessful_response(400)
+				expect(resp["errors"].size).to eq(1)
 			end
 
 			it 'because of invalid slot params' do
-				post :create, { user: {name: 'Andrey', email: 'someEmail@servcer.com', address: 'some street, some city', zip: '000000', phone: '+74443332222'}, slot: { supplies_by_owner: true, cleaning: 100001, bathrooms: 1, bedrooms: 2 } }
+				post :create, { user: {name: 'Andrey', email: 'someEmail@servcer.com', address: 'some street, some city', zip: '000000', phone: '+74443332222'}, slot: {hours: 4, start_at: tomorrow + Random.rand(6).hours, how_often:1, bedrooms:7} }
 				resp = unsuccessful_response(400)
-				expect(resp["errors"].size).to eq(1)
+				expect(resp["errors"].size).to eq(2)
 			end
 
 		end
