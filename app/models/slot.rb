@@ -58,19 +58,14 @@ class Slot < ActiveRecord::Base
 		teams = []
 		# Now find available teams for each date
 		dates = dates.map{|d| [d, Slot.available_for_day(d, {hours: hours, start_at: start_at, flatten: false}, Slot.occupied_slots(d)).reject{|k,v| v.size == 0 }] }
-		TEAM_SIZE.times do |team|
-			count = 0
-			dates.each{|d| d[1].has_key?( (team+1).to_s ) ? count = count + 1 : nil }
-			teams << team + 1 if count == TEAM_SIZE
-		end
-		self.team = teams.first
-		self.team = 1 unless self.team
+		self.team = dates.first[1].keys.first.to_i
 		# Now save our slot + other slots based on how_often param
 		ActiveRecord::Base.transaction do
 			dates.each_with_index do |d, index|
 				next if index == 0	
 				slot = Slot.new(self.attributes.inject({}){|memo,(k,v)| memo[k.to_sym] = v; memo})
 				slot.start_at = d[0]
+				slot.team = dates[index][1].keys.first.to_i
 				slot.skip_validation = true
 				slot.save!
 			end
