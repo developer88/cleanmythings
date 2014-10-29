@@ -44,6 +44,10 @@ For that task i did not take into consideration time for team to rest and to tra
 
 Look at [schema.rb](https://github.com/developer88/cleanmythings/blob/master/db/schema.rb "schema.rb") for more details.
 
+At first i wanted to create slots in table with step 0f 30 minutes, but then i decided that it is a bad idea to store empty rows in DB so i decided to store only filled slots.
+
+Because of each slot may have different start time and length i use GAP constant to check if next slot is in +- GAP interval.
+
 ###### Create API
 
 * Look at [slots_controller.rb](https://github.com/developer88/cleanmythings/blob/master/app/controllers/slots_controller.rb "slots_controller.rb") for main API methods.

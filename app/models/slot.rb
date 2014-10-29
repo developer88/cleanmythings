@@ -12,6 +12,8 @@ class Slot < ActiveRecord::Base
 	DAYS_OF_WEEK = 7 # Number of days in week
 	GAP = 1.hour # Value on how start_time for slot can differ  
 
+	ROUND_HOUR = ->(time){ TimeDifference.between(time, Time.new(time.year, time.month, time.day, time.hour, 0) ).in_minutes > 0 ? Time.new(time.year, time.month, time.day, time.hour + 1, 0) : time }
+
 	# Model definition
 	belongs_to :user
 
@@ -27,20 +29,17 @@ class Slot < ActiveRecord::Base
 	validates :hours, numericality: true, if: Proc.new { |a| a.hours.present? }
 	validates :priority, presence: true, if: :not_enough_time?
 	validates :team, numericality: { only_integer: true, greater_than_or_equal_to: 1, less_than_or_equal_to: TEAM_SIZE }, if: Proc.new { |a| a.team.present? }
+	#valodates :round_time
 
 	before_save :update_end_at_date
-
-	# check if slot is available
-	def available?
-		slots = Slot.available(self.attributes.inject({}){|memo,(k,v)| memo[k.to_sym] = v; memo})
+	before_save :is_available
 
 
-		# TODO
-		slots
-	end
 
 	# book current slot
 	def book
+		return false unless valid?
+
 		# todo
 		# self.team = 1 # assign team
 		save
@@ -59,13 +58,16 @@ class Slot < ActiveRecord::Base
 	# how_often
 	# hours
 	def self.available(params = {})
-		cur_date = Time.now
+		
 
-		params = {bathrooms: 1, bedrooms: 0, cleaning: 0, how_often: 0}.merge(params)
+		params = {bathrooms: 1, bedrooms: 0, cleaning: 0, how_often: 0, date: Time.now}.merge(params)
 		params[:hours] = Slot.new(params).time_recommend unless params[:hours] # check for minimum time TODO
-		params[:limit] = (params[:how_often].to_i * DAYS_OF_WEEK * COUNT_OF_ITERATION).days
-		params[:limit] = CALENDAR_SIZE if params[:limit] == 0.days || params[:limit] > CALENDAR_SIZE
-
+		params[:date] = ROUND_HOUR.call(Time.now > params[:date] ? Time.now : params[:date])
+		#params[:limit] = CALENDAR_SIZE
+		#params[:limit] = (params[:how_often].to_i * DAYS_OF_WEEK * COUNT_OF_ITERATION).days
+		#params[:limit] = CALENDAR_SIZE if params[:limit] == 0.days || params[:limit] > CALENDAR_SIZE
+		cur_date = params[:date] 
+		#puts cur_date
 		#available_for_day = ->(current, needle){ slots.detect{|s| Time.at(needle).to_date === Time.at(current).to_date }.detect{|s| () || () } }
 
 
@@ -77,35 +79,51 @@ class Slot < ActiveRecord::Base
 		# To reduce amount of operations i do it with 2 steps
 		#
 		# 1) find any free slots based on hours required for cleaning for CALENDAR_SIZE days
-		while cur_date <= (Time.now + params[:limit])
+		while cur_date <= (params[:date] + CALENDAR_SIZE)
 			
 			# check if current_date is free
 			to_day = Slot.available_for_day(cur_date, params, slots)
-			list[cur_date] = to_day if to_day.size > 0	
+			#puts to_day.inspect
+			list[Time.new(cur_date.year, cur_date.month, cur_date.day)] = to_day if to_day.size > 0	
 
 			cur_date = Time.new(cur_date.year, cur_date.month, cur_date.day) + 1.day
 		end
 		list.flatten.uniq
+		#return list
 
 		# 2) now if how_often param is more than 0 then we should find out days that would be free for COUNT_OF_ITERATION times in the future
-		results = []
+		results = {}
 		if params[:how_often] > 0			
 			list.keys.each do |day|
 				list[day].each do |slot|
+					slots = {}
+					#puts "!!!!! FOR SLOT #{slot}"
 					COUNT_OF_ITERATION.times do |i|
 					    next_date = day + (i*DAYS_OF_WEEK*params[:how_often]).days
-					    break if list.has_key?(next_date)
-					    if list[next_date].find_all{|s| s >= slot - GAP && s <= slot + GAP }.size == 0
-					    	list[day].remove(slot)
-					    	break
+					    #puts list.inspect
+					    #puts day
+					   # puts next_date
+					  # puts next_date
+					    break unless list.has_key?(next_date)
+					    
+					    #puts "sss"
+					    #list[next_date].each{|s| puts "#{slot} : #{s} >= #{Time.new(s.year, s.month, s.day, slot.hour, slot.min) - GAP} && #{s} <= #{Time.new(s.year, s.month, s.day, slot.hour, slot.min) + GAP}" }
+					    #puts list[next_date].find_all{|s| s >= slot - GAP && s <= slot + GAP }.size.inspect
+					    if list[next_date].find_all{|s| s >= Time.new(s.year, s.month, s.day, slot.hour, slot.min) - GAP && s <= Time.new(s.year, s.month, s.day, slot.hour, slot.min) + GAP }.size > 0
+					    	slots[slot] = 0 unless slots.has_key?(slot)
+					    	slots[slot] += 1 
 					    end
 					end
+					#puts slots.inspect
+					results[day] = [] unless results.has_key?(day)
+					slots.keys.each{|s| slots[s] == COUNT_OF_ITERATION ? results[day] << s : nil }					
 				end
 			end
 		else
 			results = list
 		end
-		results		
+		#list.reject{|k,v| v.size == 0 }	
+		results.reject{|k,v| v.size == 0 }	
 	end
 
 	# Find all posible time gaps (slots) inside 'current' day
@@ -123,6 +141,7 @@ class Slot < ActiveRecord::Base
 		return [] if params[:hours].to_i == 0
 		return [] if current > end_time.call(current)
 
+		#puts start_time_for_today
 
 		TEAM_SIZE.times{|t| teams[(t+1).to_s] = []} # initialize array for each team
 		collection = Slot.all.order('date ASC') unless collection # get slots collection if needed
@@ -132,15 +151,17 @@ class Slot < ActiveRecord::Base
 			collection.each{|s| teams[s.team.to_s] << [s.start_at, (s.start_at + s.hours.hours)] } 
 			TEAM_SIZE.times{|t| teams[(t+1).to_s].size > 0 ? (teams[(t+1).to_s].unshift([start_time.call(current),  start_time.call(current)])) : nil }
 		end 
+		#puts teams.inspect
 		TEAM_SIZE.times do |i|
 			# for each team find free slot based on hours params
 			if teams[(i+1).to_s].size == 0 
 				# For empty team's day
 				slots = ((end_time.call(current) - start_time_for_today) / 1.hour).round.divmod(params[:hours])
 				#puts "#{end_time.call(current)} - #{start_time_for_today} => #{slots.inspect}"
-				(slots[0] + (slots[1] > 0 ? 1 : 0)).times do |index|
-					list << (start_time_for_today + (index * params[:hours]).hours).to_time
-				end
+				((end_time.call(current) - start_time_for_today) / 1.hour).round.times{|i| list << (start_time_for_today + i.hours).to_time }
+				#(slots[0] + (slots[1] > 0 ? 1 : 0)).times do |index|
+				#	list << (start_time_for_today + (index * params[:hours]).hours).to_time
+				#end
 			else
 				# For day with slots
 				#puts teams.inspect
@@ -203,6 +224,14 @@ class Slot < ActiveRecord::Base
 
 		def update_end_at_date
 			self.end_at = start_at + hours.hours
+		end
+
+		def is_available 
+			self.start_at = ROUND_HOUR.call(start_at)
+			date = Time.new(start_at.year, start_at.month, start_at.day)
+			status = Slot.available(self.attributes.inject({}){|memo,(k,v)| memo[k.to_sym] = v; memo}.merge({date: start_at})).has_key?(date)
+			errors.add(:start_at, "Current date is not available") unless status
+			status
 		end
 
 end
